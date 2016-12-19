@@ -26,12 +26,12 @@ struct command2 {
 struct AddCommand {
 	int valid; //0=false, 1=true
 	char* name1;
-	char sex1;
+	char sex1; //f=female, m=male
 
 	char* relation;
 
 	char* name2;
-	char sex2;
+	char sex2; //f=female, m=male
 };
 
 /**
@@ -39,16 +39,70 @@ struct AddCommand {
  * (a name can have whitespaces, those need to be "joined")
  */
 char** joinAddArguments(int argc, char* argv[]) {
-	if (argc > 5) {
+	if (argc > 3) {
 		puts("TODO: whitespaces in names currently not supported");
 	}
-	return argv;
+	char** result; //<person1> <relation> <person2>
+	result = calloc(3, sizeof(char*));
+
+	/**
+	 * name1,name2=<person incl. sex>. e.g. "mother [f]", or "Sirius Black Jr. [m]"
+	 *
+	 *
+	 * find the relation at position 'x' (argv[x])
+	 *
+	 * name1 = join of all strings before argv[x]
+	 * name2 = join of all strings after argv[x]
+	 */
+	int rel_idx = -1; //position of relation
+	size_t name1_size = 0, name2_size = 0;
+	for (int i = 0; i < argc; i++) {
+		if ( //
+		strcmp("mother", argv[i]) == 0 //
+		|| strcmp("father", argv[i]) == 0 //
+		|| strcmp("mgm", argv[i]) == 0 //
+		|| strcmp("fgm", argv[i]) == 0 //
+		|| strcmp("mgf", argv[i]) == 0 //
+		|| strcmp("fgf", argv[i]) == 0 //
+				) {
+			rel_idx = i;
+			result[1] = argv[i];
+		}
+		if (rel_idx == -1) {
+			name1_size += strlen(argv[i]);
+		} else if (i > rel_idx) {
+			name2_size += strlen(argv[i]);
+		}
+	}
+
+	char* name1;
+	char* name2;
+	name1 = malloc(name1_size * sizeof(char)); //allocate memory for name1
+	name2 = malloc(name2_size * sizeof(char)); //allocate memory for name2
+
+	//copy name1
+	for (int i = 0; i < rel_idx; i++) {
+		strcat(name1, argv[i]);
+	}
+
+	//copy name2
+	for (int i = (rel_idx + 1); i < argc; i++) {
+		strcat(name2, argv[i]);
+	}
+
+	result[0] = name1;
+	result[2] = name2;
+	return result;
 }
 
+/**
+ * [f] -> f
+ * [m] -> m
+ */
 char parseSex(char* token) {
-	if (strcmp("[f]", token) == 0)
+	if (strstr(token, "[f]") != '\0')
 		return 'f';
-	else if (strcmp("[m]", token) == 0)
+	else if (strstr(token, "[m]") != NULL)
 		return 'm';
 	return ' ';
 }
@@ -59,19 +113,19 @@ struct AddCommand parseAddCommand(int argc, char* argv[]) {
 	char** tokens;
 	tokens = joinAddArguments(argc, argv);
 
-	if (argc < 5) {
+	if (argc < 3) {
 		puts("invalid command. at least 5 parameters required");
 		cmd.valid = 0;
 		return cmd;
 	}
 
 	cmd.name1 = tokens[0];
-	cmd.sex1 = parseSex(tokens[1]);
+	cmd.sex1 = parseSex(tokens[0]);
 
-	cmd.relation = tokens[2];
+	cmd.relation = tokens[1];
 
-	cmd.name2 = tokens[3];
-	cmd.sex2 = parseSex(tokens[4]);
+	cmd.name2 = tokens[2];
+	cmd.sex2 = parseSex(tokens[2]);
 
 	cmd.valid = 1;
 
@@ -112,20 +166,20 @@ struct command readCommand() {
 //				putchar(line[i]);
 //			}
 //		}
-	//free(line);
+//free(line);
 
 	return cmd;
 
 }
 
 // copied from: https://www.quora.com/How-do-you-write-a-C-program-to-split-a-string-by-a-delimiter
-char** mystrsplit(const char* str, const char* delim, size_t* numtokens) {
-	// copy the original string so that we don't overwrite parts of it
-	// (don't do this if you don't need to keep the old line,
-	// as this is less efficient)
+char** strsplit(const char* str, const char* delim, size_t* numtokens) {
+// copy the original string so that we don't overwrite parts of it
+// (don't do this if you don't need to keep the old line,
+// as this is less efficient)
 	char *s = strdup(str);
-	// these three variables are part of a very common idiom to
-	// implement a dynamically-growing array
+// these three variables are part of a very common idiom to
+// implement a dynamically-growing array
 	size_t tokens_alloc = 1;
 	size_t tokens_used = 0;
 	char **tokens = calloc(tokens_alloc, sizeof(char*));
@@ -139,7 +193,7 @@ char** mystrsplit(const char* str, const char* delim, size_t* numtokens) {
 		}
 		tokens[tokens_used++] = strdup(token);
 	}
-	// cleanup
+// cleanup
 	if (tokens_used == 0) {
 		free(tokens);
 		tokens = NULL;
@@ -159,14 +213,14 @@ struct command2 readCommand2() {
 	do {
 		printf("esp> ");
 		read = getline(&line, &len, stdin);
-	} while (strcmp("\n",line)==0); //ignore "empty" line
+	} while (strcmp("\n", line) == 0); //ignore "empty" line
 
 	printf("you entered: %s", line);
 
 	size_t numtokens;
 	char** tokens;
-	tokens = mystrsplit(line, " \n", &numtokens);
-	//cmd.action=malloc(1*sizeof(char*));
+	tokens = strsplit(line, " \n", &numtokens);
+//cmd.action=malloc(1*sizeof(char*));
 	cmd.action = (tokens[0]);
 
 	cmd.argc = numtokens - 1; //does this work?
@@ -194,7 +248,7 @@ int isValidAddCommand(struct AddCommand cmd) {
 }
 
 int main(int argc, char *argv[]) {
-	//puts("!!!Hello World!!!"); /* prints !!!Hello World!!! */
+//puts("!!!Hello World!!!"); /* prints !!!Hello World!!! */
 
 	struct command2 cmd;
 	cmd = readCommand2();
