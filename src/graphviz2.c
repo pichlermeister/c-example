@@ -38,12 +38,13 @@ struct AddCommand {
  * "re-formats" / joins names in add command
  * (a name can have whitespaces, those need to be "joined")
  */
-char** joinAddArguments(int argc, char* argv[]) {
-	if (argc > 3) {
-		puts("TODO: whitespaces in names currently not supported");
+char** joinAddArguments(int argc, char* argv[], int *numtokens) {
+	if (argc < 5) {
+		numtokens = 0;
+		return NULL;
 	}
 	char** result; //<person1> <relation> <person2>
-	result = calloc(3, sizeof(char*));
+	result = calloc(5, sizeof(char*));
 
 	/**
 	 * name1,name2=<person incl. sex>. e.g. "mother [f]", or "Sirius Black Jr. [m]"
@@ -66,32 +67,38 @@ char** joinAddArguments(int argc, char* argv[]) {
 		|| strcmp("fgf", argv[i]) == 0 //
 				) {
 			rel_idx = i;
-			result[1] = argv[i];
-		}
-		if (rel_idx == -1) {
-			name1_size += strlen(argv[i]);
-		} else if (i > rel_idx) {
-			name2_size += strlen(argv[i]);
 		}
 	}
 
-	char* name1;
-	char* name2;
-	name1 = malloc(name1_size * sizeof(char)); //allocate memory for name1
-	name2 = malloc(name2_size * sizeof(char)); //allocate memory for name2
+	if (rel_idx + 2 <= argc)
+		*numtokens = 5; //as we have found something and we have more than 5 arguments, we parse everything for 5 arguments...
+
+	for (int i = 0; i < rel_idx - 1; i++) {
+		name1_size += strlen(argv[i]);
+	}
+	for (int i = rel_idx + 1; i < argc; i++) {
+		name2_size += strlen(argv[i]);
+	}
 
 	//copy name1
-	for (int i = 0; i < rel_idx; i++) {
+	char* name1;
+	name1 = malloc(name1_size * sizeof(char)); //allocate memory for name1
+	for (int i = 0; i < rel_idx - 1; i++) {
 		strcat(name1, argv[i]);
 	}
+	result[0] = name1;
+	result[1] = argv[rel_idx - 1];
+	result[2] = argv[rel_idx];
 
 	//copy name2
-	for (int i = (rel_idx + 1); i < argc; i++) {
+	char* name2;
+	name2 = malloc(name2_size * sizeof(char)); //allocate memory for name2
+	for (int i = (rel_idx + 1); i < argc - 1; i++) {
 		strcat(name2, argv[i]);
 	}
+	result[3] = name2;
+	result[4] = argv[argc - 1];
 
-	result[0] = name1;
-	result[2] = name2;
 	return result;
 }
 
@@ -111,21 +118,22 @@ struct AddCommand parseAddCommand(int argc, char* argv[]) {
 	struct AddCommand cmd;
 
 	char** tokens;
-	tokens = joinAddArguments(argc, argv);
+	int numtokens;
+	tokens = joinAddArguments(argc, argv, &numtokens);
 
-	if (argc < 3) {
+	if (numtokens < 5) {
 		puts("invalid command. at least 5 parameters required");
 		cmd.valid = 0;
 		return cmd;
 	}
 
 	cmd.name1 = tokens[0];
-	cmd.sex1 = parseSex(tokens[0]);
+	cmd.sex1 = parseSex(tokens[1]);
 
-	cmd.relation = tokens[1];
+	cmd.relation = tokens[2];
 
-	cmd.name2 = tokens[2];
-	cmd.sex2 = parseSex(tokens[2]);
+	cmd.name2 = tokens[3];
+	cmd.sex2 = parseSex(tokens[4]);
 
 	cmd.valid = 1;
 
