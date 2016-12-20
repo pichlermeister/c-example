@@ -1,1 +1,8 @@
 add karl [m] father wolfgang [m]
+
+add elfrieda [f] mother wolfgang [m]
+
+add oma [f] mgm wolfgang [m]
+
+add mutter [f] mgf wolfgang [m]
+
